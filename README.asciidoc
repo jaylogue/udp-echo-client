@@ -1,0 +1,103 @@
+# UDPEchoClient - A Multi-Threaded UDP Echo Client Tool
+
+*UDPEchoClient* is a command-line tool that generates a stream of UDP packets and times
+their round-trip time through a UDP echo server.  It is useful evaluating network performance
+as well as testing the behavior of network drivers.
+
+*UDPEchoClient* uses a multi-threaded, multi-socket design with a configurable number of send/receive
+thread pairs sending and receiving packets over a single socket.  All packets are sent to a single IPv4
+or IPv6 address, and a single UDP port at address (although see Send-to-Self Mode below).
+
+Counts of packets sent and received, along with packet round-trip times, are collected and summarized on
+periodic basis while the tool runs.
+
+The tool can be configured to run for a specified period of time (default: 10 seconds), or until a
+certain number of packets have been sent.  After sending completes, tool continues to run for a configurable
+"wind-down" period (default: 3 seconds) to give time for all responses to be received.
+
+The *UDPEchoClient* runs on either Linux or Windows.  Currently, building for Windows requires the MinGW-w64
+tool chain, in either native or cross compilation configurations.
+
+## Command Line Options
+
+The *UDPEchoClient* tool is invoked as follows:
+
+    UDPEchoClient [<option>...] <remote-host> [<remote-port>]
+
+where `<remote-host>` is the ip address or hostname of the UDP Echo server and `<remote-port>` is the server's listening port.
+If a remote port is not given, it defaults to 7 (the standard UDP Echo port).
+
+*UDPEchoClient* accepts the following command line options:
+
+[frame=none,grid=none]
+[cols="m,3d"]
+|===
+|-t, --threads=_int_          | Number of send/receive thread pairs. Defaults to 1.
+|-c, --send-count=_int_       | Number of packets that each sending thread sends at each send interval. Defaults to 1.
+|-i, --send-interval=_int_    | Interval between sending, in microseconds.  Defaults to 1000000 (1 second).
+|-T, --send-time=_int_        | Total amount of time to spend sending packets, in seconds.  Defaults to 10.
+|-L, --send-limit=_int_       | Maximum number of packets to send across all threads.  Defaults to unlimited.
+|-s, --packet-size=_int_      | Size of the UDP packet payload in bytes. Defaults to 20.
+|-w, --wind-down=_int_        | Amount of time to continuing waiting for packets after sending completes, in seconds. Defaults to 3.
+|-l, --local-port=_int_       | Base port number for local sockets. Each send/receive thread pair increments this number by 1. Defaults to 50000.
+|-r, --stats-interval=_int_   | Interval at which send/receive statistics are reported.  Defaults to 1.  Specify 0 to disable periodic reporting.
+|-n, --no-affinity            | Disable use of processor affinity.
+|-R, --receive-buf-size=_int_ | Size of the UDP socket receive buffer, in bytes.  Defaults to system default.
+|-S, --send-buf-size=_int_    | Size of the UDP socket send buffer, in bytes.  Defaults to system default.
+|-h, --help                   | Display the help message.
+|===
+
+## Output
+
+The following is an example of the output produced by the tool as it runs:
+
+    $ ./UDPEchoClient --threads 2 --send-interval 1000 --send-count 5 192.168.1.2 7
+    00:00:00.000 TEST STARTING (target: 192.168.1.2, port 7)
+    00:00:01.000 tx:10000 tx-fail:0 rx:9995 rx-pending:5 min-rtt:0.325 max-rtt:1.729 avg-rtt:0.555 p90-rtt:0.510 p99-rtt:0.636
+    00:00:02.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.451 max-rtt:0.766 avg-rtt:0.537 p90-rtt:0.606 p99-rtt:0.503
+    00:00:03.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.376 max-rtt:4.304 avg-rtt:0.556 p90-rtt:0.532 p99-rtt:0.505
+    00:00:04.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.428 max-rtt:1.821 avg-rtt:0.561 p90-rtt:0.497 p99-rtt:0.504
+    00:00:05.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.493 max-rtt:0.829 avg-rtt:0.551 p90-rtt:0.527 p99-rtt:0.522
+    00:00:06.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.491 max-rtt:0.816 avg-rtt:0.538 p90-rtt:0.543 p99-rtt:0.504
+    00:00:07.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.493 max-rtt:0.835 avg-rtt:0.546 p90-rtt:0.527 p99-rtt:0.543
+    00:00:08.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.328 max-rtt:0.838 avg-rtt:0.547 p90-rtt:0.503 p99-rtt:0.503
+    00:00:09.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.368 max-rtt:1.468 avg-rtt:0.560 p90-rtt:0.525 p99-rtt:0.519
+    00:00:10.000 tx:10000 tx-fail:0 rx:10000 rx-pending:5 min-rtt:0.492 max-rtt:0.838 avg-rtt:0.553 p90-rtt:0.504 p99-rtt:0.507
+    00:00:10.000 SENDING DONE
+    00:00:11.000 tx:0 tx-fail:0 rx:5 rx-pending:0 min-rtt:0.655 max-rtt:0.680 avg-rtt:0.667 p90-rtt:0.680 p99-rtt:0.680
+    00:00:12.000 tx:0 tx-fail:0 rx:0 rx-pending:0 min-rtt:0.000 max-rtt:0.000 avg-rtt:0.000 p90-rtt:0.000 p99-rtt:0.000
+    00:00:13.000 tx:0 tx-fail:0 rx:0 rx-pending:0 min-rtt:0.000 max-rtt:0.000 avg-rtt:0.000 p90-rtt:0.000 p99-rtt:0.000
+    00:00:13.000 TEST COMPLETE total-tx:100000 total-rx:100000 total-lost:0 (0.000%)
+
+The displayed fields are:
+
+[frame=none,grid=none]
+[cols="m,3d"]
+|===
+|tx             | Number of packets sucessfully sent by all threads during the reporting interval.
+|tx-fail        | Number of attempts to send a packet that failed due to lack of buffer space in the kernel, during the reporting interval.
+|rx             | Number of packets received by all threads during the reporting interval.
+|rx-pending     | Cumulative number of packets that were sent, but for which a response packet has yet to be received.
+|min-rtt        | Minimum measured round-trip time of all packets sent and received during the reporting interval, in miliseconds.
+|max-rtt        | Maximum measured round-trip time of all packets sent and received during the reporting interval, in miliseconds.
+|avg-rtt        | Average measured round-trip time of all packets sent and received during the reporting interval, in miliseconds.
+|p90-rtt        | The 90% percentile round-trip time of the fastest packets sent and received during the reporting interval, in milliseconds.  90% of the round-trip times measured during the reporting interval were at or below this time.
+|p99-rtt        | The 99% percentile round-trip time of the fastest packets sent and received during the reporting interval, in milliseconds.  99% of the round-trip times measured during the reporting interval were at or below this time.
+|total-tx       | Number of packets sucessfully sent during the run.
+|total-rx       | Number of packets received during the run.
+|total-lost     | Number and percentage of packets sucessfully sent for which a response was not received.
+|===
+
+
+## Send-to-Self Mode
+
+If a dash (`-`) is given as the name of the remote host, the *UDPEchoClient* tool will operate in _send-to-self_ mode.
+In this mode, each sending thread sends directly to its own UDP port, resulting in all communcation looping back through
+the local kernel.  This mode is useful for testing the basic functionality of the tool, as well as evaluating the innate capacity of the underlying operating system.
+
+
+## License
+
+The *UDPEchoClient* tool source code is licensed under the [Apache version 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
+
+All documentation, including any images and this README, are licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
