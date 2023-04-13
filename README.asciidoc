@@ -1,22 +1,24 @@
 # UDPEchoClient - A Multi-Threaded UDP Echo Client Tool
 
 *UDPEchoClient* is a command-line tool that generates a stream of UDP packets and times
-their round-trip time through a UDP echo server.  It is useful evaluating network performance
-as well as testing the behavior of network drivers.
+their round-trip time through a UDP echo server.  It is useful for such things as evaluating network performance
+and load testing network drivers.
 
 *UDPEchoClient* uses a multi-threaded, multi-socket design with a configurable number of send/receive
-thread pairs sending and receiving packets over a single socket per pair.  All packets are sent to a single IPv4
-or IPv6 address, and a single UDP port at that address (although see Send-to-Self Mode below).
+thread pairs.  Each thread pair sends and receives packets over an individual UDP socket bound to a unique local port.
+All packets are sent to a single destination IPv4 or IPv6 address, and a single UDP port at that address
+(although see Send-to-Self Mode below).
 
-Counts of packets sent and received, along with packet round-trip statistics, are collected and summarized on
-periodic basis while the tool runs.
+At it runs, the tools tracks the number of packets sent and received, along with packet round-trip times, 
+and prints summary statistics on a periodic basis.
 
 The tool can be configured to run for a specified period of time (default: 10 seconds), or until a
-certain number of packets have been sent.  After sending completes, tool continues to run for a configurable
-"wind-down" period (default: 3 seconds) to give time for all responses to be received.
+certain number of packets have been sent.  After sending completes, the tool continues to run for a configurable
+"wind-down" period (default: 3 seconds) to give time for all responses to arrive.
 
-The *UDPEchoClient* runs on either Linux or Windows.  Currently, building for Windows requires the MinGW-w64
-tool chain, in either native or cross compilation configuration.
+The *UDPEchoClient* runs on either Linux or Windows.  A simple Makefile is provided.  Building for Linux requires gcc (although clang may work)
+as well as access to the system's pthread library.  Building for Windows requires the MinGW-w64 tool chain, in either a native
+or cross-compilation configuration.
 
 ## Command Line Options
 
